@@ -1,0 +1,20 @@
+# macOS and editor files
+.DS_Store
+*.asv
+*~
+
+# Course materials are not part of the application repository
+*.pdf
+Past Lecture Slides/
+
+# MATLAB generated files
+build/
+codegen/
+slprj/
+*.prj
+*.log
+
+# Packaged outputs
+*.exe
+*.app/
+*.ctf
