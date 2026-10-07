@@ -1,0 +1,65 @@
+name: Build HW2 Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "HW2_source.zip"
+      - ".github/workflows/build-hw2-windows.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Extract HW2 source
+        shell: pwsh
+        run: Expand-Archive -Path HW2_source.zip -DestinationPath . -Force
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          architecture: "x64"
+          cache: pip
+          cache-dependency-path: |
+            HW2/requirements.txt
+            HW2/requirements-dev.txt
+
+      - name: Install dependencies
+        working-directory: HW2
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run automated tests
+        working-directory: HW2
+        run: python -m unittest discover -s tests -v
+
+      - name: Build executable
+        working-directory: HW2
+        run: python -m PyInstaller --clean --noconfirm SpringDamperTeachingModule.spec
+
+      - name: Verify executable
+        working-directory: HW2
+        shell: pwsh
+        run: |
+          $exe = "dist/SpringDamperTeachingModule.exe"
+          if (-not (Test-Path $exe)) { throw "Expected executable was not created: $exe" }
+          $size = (Get-Item $exe).Length
+          if ($size -lt 1000000) { throw "Executable is unexpectedly small: $size bytes" }
+          Write-Host "Verified $exe ($size bytes)"
+
+      - name: Upload Windows executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpringDamperTeachingModule-Windows
+          path: HW2/dist/SpringDamperTeachingModule.exe
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
